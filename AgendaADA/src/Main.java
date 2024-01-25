@@ -3,14 +3,17 @@ import java.nio.file.Path; // Biblioteca para manipulação de caminhos de arqui
 import java.nio.file.Paths; // Biblioteca para criação de objetos Path
 import java.io.IOException; // Verificação de erros na copilação
 import java.util.InputMismatchException; //Verifica erro de inputs
+import java.nio.file.*;
+import java.util.List;
+import java.util.stream.Collectors;
 import java.util.Scanner;
 
 
 public class Main {
     public static void main(String[] args) {
         verificaUserBase();
-        menuPrincipal();
         verificaNumberBase();
+        menuPrincipal();
     }
 
     public static void menuPrincipal() {
@@ -18,7 +21,7 @@ public class Main {
         int opcao;
 
         do {
-            limparConsole();
+            System.out.println("");
             System.out.println("##################");
             System.out.println("##### AGENDA #####");
             System.out.println("##################");
@@ -32,7 +35,6 @@ public class Main {
             try {
                 System.out.print("Digite uma opção: ");
                 opcao = scanner.nextInt();
-
             } catch (InputMismatchException e) {
                 System.out.println("Opção inválida. Por favor, digite um número válido.");
                 scanner.nextLine(); // Limpa o buffer do scanner
@@ -40,7 +42,111 @@ public class Main {
             }
 
         } while (opcao <= 0 || opcao >= 5);
+        if (opcao == 1) {
+            adicionarContato();
+        } else if(opcao == 2){
+
+        } else if(opcao == 3){
+
+        } else {
+
+        }
     }
+
+    public static void adicionarContato() {
+        Scanner scanner = new Scanner(System.in);
+
+        // Obtém o caminho do diretório do projeto
+        String diretorioProjeto = System.getProperty("user.dir");
+
+        // Especifica os nomes dos arquivos
+        String nomeArquivoBase = "userBase.txt";
+        String nomeArquivoNumero = "userNumber.txt";
+
+        // Cria os caminhos completos dos arquivos
+        Path caminhoArquivoBase = Paths.get(diretorioProjeto, nomeArquivoBase);
+        Path caminhoArquivoNumero = Paths.get(diretorioProjeto, nomeArquivoNumero);
+
+        try {
+            // Lê todos os IDs existentes
+            List<Long> idsExistentes = Files.lines(caminhoArquivoBase)
+                    .map(linha -> Long.parseLong(linha.split(",")[0]))
+                    .collect(Collectors.toList());
+
+            // Encontra o próximo ID disponível
+            long novoId;
+            do {
+                // Solicita o ID ao usuário
+                System.out.print("Digite o ID desejado: ");
+                novoId = scanner.nextLong();
+                scanner.nextLine(); // Consumir a quebra de linha pendente
+
+                // Verifica se o ID já existe
+                if (idsExistentes.contains(novoId)) {
+                    System.out.println("Este ID já existe. Escolha outro.");
+                }
+            } while (idsExistentes.contains(novoId));
+
+            // Solicita informações ao usuário
+            System.out.print("Digite o nome: ");
+            String nome = scanner.nextLine();
+
+            System.out.print("Digite o sobrenome: ");
+            String sobrenome = scanner.nextLine();
+
+            // Solicita o DDD
+            System.out.print("Digite o DDD: ");
+            int ddd = scanner.nextInt();
+
+            // Consumir a quebra de linha pendente após nextInt()
+            scanner.nextLine();
+
+            // Verifica se o número com o mesmo DDD já existe
+            List<String> numerosExistentesComDDD = Files.lines(caminhoArquivoNumero)
+                    .filter(linha -> linha.contains("," + ddd + ","))
+                    .collect(Collectors.toList());
+
+            // Solicita o número de telefone
+            String numeroTelefone = obterNumeroTelefone(scanner, numerosExistentesComDDD);
+
+            // Adiciona informações ao arquivo userBase.txt
+            String novoContatoBase = String.format("%d,%s,%s", novoId, nome, sobrenome);
+            Files.write(caminhoArquivoBase, (novoContatoBase + System.lineSeparator()).getBytes(), StandardOpenOption.APPEND);
+
+            // Adiciona informações ao arquivo userNumber.txt
+            String novoContatoNumero = String.format("%d,%s,%s", novoId, ddd, numeroTelefone);
+            Files.write(caminhoArquivoNumero, (novoContatoNumero + System.lineSeparator()).getBytes(), StandardOpenOption.APPEND);
+
+            System.out.println("Contato adicionado com sucesso!");
+            menuPrincipal();
+
+        } catch (IOException e) {
+            System.out.println("Erro ao ler ou escrever no arquivo: " + e.getMessage());
+            menuPrincipal();
+        }
+    }
+
+    private static String obterNumeroTelefone(Scanner scanner, List<String> numerosExistentesComDDD) {
+        String numeroTelefone;
+        boolean numeroValido;
+
+        System.out.print("Digite o número de telefone: ");
+        numeroTelefone = scanner.next();
+        scanner.nextLine();
+
+        // Verifica se o número com o mesmo DDD já existe
+        final String numeroTelefoneFinal = numeroTelefone;
+        numeroValido = !numerosExistentesComDDD.stream().anyMatch(linha -> linha.endsWith("," + numeroTelefoneFinal));
+
+        if (!numeroValido) {
+            System.out.println("Já existe um número de telefone com o mesmo DDD. Tente outro número.");
+            menuPrincipal();
+        }
+
+        return numeroTelefone;
+    }
+
+
 
     public static void getContatos(){
         System.out.println("");
@@ -86,14 +192,16 @@ public class Main {
         // Verifica se o arquivo existe
         if (Files.exists(caminhoArquivo)) {
             //System.out.println("O arquivo " + caminhoArquivo + " existe no diretório do projeto.");
+            System.out.println("system@agenda: Base de dados 1 carregada!");
         } else {
             //System.out.println("O arquivo " + caminhoArquivo + " NÃO existe no diretório do projeto. Criando...");
             try {
                 // Cria o arquivo
                 Files.createFile(caminhoArquivo);
                 //System.out.println("Arquivo criado com sucesso!");
+                System.out.println("system@agenda: Base de dados 1 criada! " + caminhoArquivo);
             } catch (IOException e) {
-                System.out.println("Erro ao criar o arquivo: " + e.getMessage());
+                System.out.println("system@agenda: Erro ao criar o arquivo: " + e.getMessage());
             }
         }
     }
@@ -110,19 +218,18 @@ public class Main {
 
         // Verifica se o arquivo existe
         if (Files.exists(caminhoArquivo)) {
-            //System.out.println("O arquivo " + caminhoArquivo + " existe no diretório do projeto.");
+            System.out.println("system@agenda: Base de dados 2 carregada!");
+            System.out.println("");
         } else {
             //System.out.println("O arquivo " + caminhoArquivo + " NÃO existe no diretório do projeto. Criando...");
             try {
                 // Cria o arquivo
                 Files.createFile(caminhoArquivo);
-                //System.out.println("Arquivo criado com sucesso!");
+                System.out.println("system@agenda: Base de dados 2 criada! " + caminhoArquivo);
             } catch (IOException e) {
-                System.out.println("Erro ao criar o arquivo: " + e.getMessage());
+                System.out.println("system@agenda: Erro ao criar o arquivo: " + e.getMessage());
             }
         }
     }
-
-    public static void limparConsole() { System.out.println("\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n \n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n \n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n \n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n \n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n \n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n \n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n \n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n \n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n \n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n \n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n \n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n"); }
 
 }
