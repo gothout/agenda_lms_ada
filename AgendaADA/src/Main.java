@@ -37,19 +37,103 @@ public class Main {
                 opcao = scanner.nextInt();
             } catch (InputMismatchException e) {
                 System.out.println("Opção inválida. Por favor, digite um número válido.");
-                scanner.nextLine(); // Limpa o buffer do scanner
-                opcao = 0; // Reinicializa a opção para evitar um loop infinito
+                scanner.nextLine();
+                opcao = 0;
             }
 
         } while (opcao <= 0 || opcao >= 5);
         if (opcao == 1) {
             adicionarContato();
         } else if(opcao == 2){
-
+            removerContato();
         } else if(opcao == 3){
-
+            editarContato();
         } else {
+            System.out.println("Encerrando o sistema");
+            scanner.close();
+            System.exit(0);
+        }
+    }
 
+
+
+    public static void editarContato() {
+        Scanner scanner = new Scanner(System.in);
+
+        // Obtém o caminho do diretório do projeto
+        String diretorioProjeto = System.getProperty("user.dir");
+
+        // Especifica os nomes dos arquivos
+        String nomeArquivoBase = "userBase.txt";
+        String nomeArquivoNumero = "userNumber.txt";
+
+        // Cria os caminhos completos dos arquivos
+        Path caminhoArquivoBase = Paths.get(diretorioProjeto, nomeArquivoBase);
+        Path caminhoArquivoNumero = Paths.get(diretorioProjeto, nomeArquivoNumero);
+
+        try {
+            // Lê todos os IDs existentes
+            List<Long> idsExistentes = Files.lines(caminhoArquivoBase)
+                    .map(linha -> Long.parseLong(linha.split(",")[0]))
+                    .collect(Collectors.toList());
+
+            // Solicita o ID ao usuário
+            System.out.print("Digite o ID do contato que deseja editar: ");
+            long idEditar = scanner.nextLong();
+            scanner.nextLine();
+
+            // Verifica se o ID existe
+            if (!idsExistentes.contains(idEditar)) {
+                System.out.println("ID não encontrado. Nenhum contato editado.");
+                menuPrincipal();
+            }
+
+            // Remove o contato do arquivo userBase.txt
+            List<String> novasLinhasBase = Files.lines(caminhoArquivoBase)
+                    .filter(linha -> !linha.startsWith(Long.toString(idEditar)))
+                    .collect(Collectors.toList());
+            Files.write(caminhoArquivoBase, novasLinhasBase);
+
+            // Remove o contato do arquivo userNumber.txt
+            List<String> novasLinhasNumero = Files.lines(caminhoArquivoNumero)
+                    .filter(linha -> !linha.startsWith(Long.toString(idEditar)))
+                    .collect(Collectors.toList());
+            Files.write(caminhoArquivoNumero, novasLinhasNumero);
+
+            // Agora, solicita as novas informações ao usuário
+            System.out.print("Digite o novo nome: ");
+            String novoNome = scanner.nextLine();
+
+            System.out.print("Digite o novo sobrenome: ");
+            String novoSobrenome = scanner.nextLine();
+
+            // Solicita o novo DDD
+            System.out.print("Digite o novo DDD: ");
+            int novoDDD = scanner.nextInt();
+            scanner.nextLine(); // Consumir a quebra de linha pendente após nextInt()
+
+            // Verifica se o número com o mesmo DDD já existe
+            List<String> numerosExistentesComNovoDDD = Files.lines(caminhoArquivoNumero)
+                    .filter(linha -> linha.contains("," + novoDDD + ","))
+                    .collect(Collectors.toList());
+
+            // Solicita o novo número de telefone
+            String novoNumeroTelefone = obterNumeroTelefone(scanner, numerosExistentesComNovoDDD);
+
+            // Adiciona as novas informações ao arquivo userBase.txt
+            String contatoEditadoBase = String.format("%d,%s,%s", idEditar, novoNome, novoSobrenome);
+            Files.write(caminhoArquivoBase, (contatoEditadoBase + System.lineSeparator()).getBytes(), StandardOpenOption.APPEND);
+
+            // Adiciona as novas informações ao arquivo userNumber.txt
+            String contatoEditadoNumero = String.format("%d,%s,%s", idEditar, novoDDD, novoNumeroTelefone);
+            Files.write(caminhoArquivoNumero, (contatoEditadoNumero + System.lineSeparator()).getBytes(), StandardOpenOption.APPEND);
+
+            System.out.println("Contato editado com sucesso!");
+            menuPrincipal();
+
+        } catch (IOException | InputMismatchException e) {
+            System.out.println("Erro ao ler ou escrever no arquivo: " + e.getMessage());
+            menuPrincipal();
         }
     }
 
@@ -125,6 +209,59 @@ public class Main {
             menuPrincipal();
         }
     }
+
+    public static void removerContato() {
+        Scanner scanner = new Scanner(System.in);
+
+        // Obtém o caminho do diretório do projeto
+        String diretorioProjeto = System.getProperty("user.dir");
+
+        // Especifica os nomes dos arquivos
+        String nomeArquivoBase = "userBase.txt";
+        String nomeArquivoNumero = "userNumber.txt";
+
+        // Cria os caminhos completos dos arquivos
+        Path caminhoArquivoBase = Paths.get(diretorioProjeto, nomeArquivoBase);
+        Path caminhoArquivoNumero = Paths.get(diretorioProjeto, nomeArquivoNumero);
+
+        try {
+            // Lê todos os IDs existentes
+            List<Long> idsExistentes = Files.lines(caminhoArquivoBase)
+                    .map(linha -> Long.parseLong(linha.split(",")[0]))
+                    .collect(Collectors.toList());
+
+            // Solicita o ID ao usuário
+            System.out.print("Digite o ID do contato que deseja remover: ");
+            long idRemover = scanner.nextLong();
+            scanner.nextLine(); // Consumir a quebra de linha pendente
+
+            // Verifica se o ID existe
+            if (!idsExistentes.contains(idRemover)) {
+                System.out.println("ID não encontrado. Nenhum contato removido.");
+                menuPrincipal();
+            }
+
+            // Remove o contato do arquivo userBase.txt
+            List<String> novasLinhasBase = Files.lines(caminhoArquivoBase)
+                    .filter(linha -> !linha.startsWith(Long.toString(idRemover)))
+                    .collect(Collectors.toList());
+            Files.write(caminhoArquivoBase, novasLinhasBase);
+
+            // Remove o contato do arquivo userNumber.txt
+            List<String> novasLinhasNumero = Files.lines(caminhoArquivoNumero)
+                    .filter(linha -> !linha.startsWith(Long.toString(idRemover)))
+                    .collect(Collectors.toList());
+            Files.write(caminhoArquivoNumero, novasLinhasNumero);
+
+            System.out.println("Contato removido com sucesso!");
+            menuPrincipal();
+
+        } catch (IOException | InputMismatchException e) {
+            System.out.println("Erro ao ler ou escrever no arquivo: " + e.getMessage());
+            menuPrincipal();
+        }
+    }
+
 
     private static String obterNumeroTelefone(Scanner scanner, List<String> numerosExistentesComDDD) {
         String numeroTelefone;
